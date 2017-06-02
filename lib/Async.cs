@@ -38,6 +38,11 @@ namespace Brouznouf.FiveM
             doCallback(task, callback);
         }
 
+        public static void OpenCallback(Task task, Delegate callback)
+        {
+            doCallback(task, callback);
+        }
+
         private static void doCallback<T>(Task<T> task, Delegate callback)
         {
             task.ContinueWith((task2) => {

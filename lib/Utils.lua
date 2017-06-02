@@ -7,14 +7,22 @@
 --
 -- @return DbCommand
 --
-function MySQL.Utils.CreateCommand(Query, Parameters, Transaction)
-    local Command
-
-    if transaction == nil then
-        Command = MySQL:createConnection().CreateCommand()
-    else
-        Command = Transaction.Connection.CreateCommand()
+function MySQL.Utils.CreateCommand(Query, Parameters, Transaction, callback)
+    if Transaction ~= nil then
+       return MySQL.Utils.BuildCommand(Transaction.Connection, Query, Parameters)
     end
+
+    if callback == nil then
+        return MySQL.Utils.BuildCommand(MySQL.Sync.Open(), Query, Parameters)
+    end
+
+    MySQL.Async.Open(function (Connection)
+        callback(MySQL.Utils.BuildCommand(Connection, Query, Parameters))
+    end)
+end
+
+function MySQL.Utils.BuildCommand(Connection, Query, Parameters)
+    local Command = Connection.CreateCommand()
 
     Command.CommandText = Query
 

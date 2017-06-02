@@ -10,22 +10,23 @@
 -- @return coroutine
 --
 function MySQL.Async.execute(query, params, func, transaction)
-    local Command = MySQL.Utils.CreateCommand(query, params, transaction)
-    local executeTask = Command.ExecuteNonQueryAsync();
-    local callback = func or function() end
-    local connection
+    MySQL.Utils.CreateCommand(query, params, transaction, function (Command)
+        local executeTask = Command.ExecuteNonQueryAsync();
+        local callback = func or function() end
+        local connection
 
-    if transaction then
-        connection = nil
-    else
-        connection = Command.Connection
-    end
+        if transaction then
+            connection = nil
+        else
+            connection = Command.Connection
+        end
 
-    clr.Brouznouf.FiveM.Async.ExecuteCallback(executeTask, MySQL.Async.wrapQuery(
-        callback,
-        connection,
-        Command.CommandText
-    ))
+        clr.Brouznouf.FiveM.Async.ExecuteCallback(executeTask, MySQL.Async.wrapQuery(
+            callback,
+            connection,
+            Command.CommandText
+        ))
+    end)
 end
 
 ---
@@ -39,24 +40,25 @@ end
 -- @return coroutine
 --
 function MySQL.Async.fetchAll(query, params, func, transaction)
-    local Command = MySQL.Utils.CreateCommand(query, params, transaction)
-    local executeReaderTask = Command.ExecuteReaderAsync();
-    local callback = func or function(Result) return Result end
-    local connection
+    MySQL.Utils.CreateCommand(query, params, transaction, function (Command)
+        local executeReaderTask = Command.ExecuteReaderAsync();
+        local callback = func or function(Result) return Result end
+        local connection
 
-    if transaction then
-        connection = nil
-    else
-        connection = Command.Connection
-    end
+        if transaction then
+            connection = nil
+        else
+            connection = Command.Connection
+        end
 
-    clr.Brouznouf.FiveM.Async.ExecuteReaderCallback(executeReaderTask, MySQL.Async.wrapQuery(
-        function (Result)
-            callback(MySQL.Utils.ConvertResultToTable(Result))
-        end,
-        connection,
-        Command.CommandText
-    ))
+        clr.Brouznouf.FiveM.Async.ExecuteReaderCallback(executeReaderTask, MySQL.Async.wrapQuery(
+            function (Result)
+                callback(MySQL.Utils.ConvertResultToTable(Result))
+            end,
+            connection,
+            Command.CommandText
+        ))
+    end)
 end
 
 ---
@@ -71,22 +73,23 @@ end
 -- @return coroutine
 --
 function MySQL.Async.fetchScalar(query, params, func, transaction)
-    local Command = MySQL.Utils.CreateCommand(query, params, transaction)
-    local executeScalarTask = Command.ExecuteScalarAsync();
-    local callback = func or function() end
-    local connection
+    MySQL.Utils.CreateCommand(query, params, transaction, function (Command)
+        local executeScalarTask = Command.ExecuteScalarAsync();
+        local callback = func or function() end
+        local connection
 
-    if transaction then
-        connection = nil
-    else
-        connection = Command.Connection
-    end
+        if transaction then
+            connection = nil
+        else
+            connection = Command.Connection
+        end
 
-    clr.Brouznouf.FiveM.Async.ExecuteScalarCallback(executeScalarTask, MySQL.Async.wrapQuery(
-        callback,
-        connection,
-        Command.CommandText
-    ))
+        clr.Brouznouf.FiveM.Async.ExecuteScalarCallback(executeScalarTask, MySQL.Async.wrapQuery(
+            callback,
+            connection,
+            Command.CommandText
+        ))
+    end)
 end
 
 ---
@@ -142,6 +145,24 @@ function MySQL.Async.rollbackTransaction(transaction, func)
     ))
 end
 
+---
+-- Open the connection
+--
+-- @param function callback
+--
+function MySQL.Async.Open(callback)
+    local connection = MySQL.mysql.MySqlConnection(MySQL.settings)
+    clr.Brouznouf.FiveM.Async.OpenCallback(connection.OpenAsync(), function (Result, Error)
+        if Error ~= nil then
+            Logger:Error(Error.ToString())
+
+            return nil
+        end
+
+        callback(connection)
+    end)
+end
+
 function MySQL.Async.wrapQuery(next, Connection, Message)
     local Stopwatch = clr.System.Diagnostics.Stopwatch()
     Stopwatch.Start()
@@ -149,6 +170,10 @@ function MySQL.Async.wrapQuery(next, Connection, Message)
     return function (Result, Error)
         if Error ~= nil then
             Logger:Error(Error.ToString())
+
+            if Connection then
+                Connection.Close()
+            end
 
             return nil
         end

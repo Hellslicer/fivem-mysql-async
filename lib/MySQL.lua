@@ -39,7 +39,7 @@ function MySQL.init(self)
     self.isInit = true;
     self.settings = clr.MySql.Data.MySqlClient.MySqlConnectionStringBuilder("server="..self.Config.Host..";database="..self.Config.Database..";userid="..self.Config.User..";password="..self.Config.Password.."")
     self.settings.AllowUserVariables = true
-    self.settings.Pooling = false
+    self.settings.Pooling = true
 
     return self.mysql, isInit
 end
@@ -49,6 +49,19 @@ end
 --
 -- @param self
 --
+function MySQL.createConnection(self)
+    local connection = self.mysql.MySqlConnection(self.settings)
+    local status, error = pcall(connection.Open)
+
+    if not status then
+        Logger:Fatal(error)
+
+        return nil
+    end
+
+    return connection
+end
+
 function MySQL.createConnection(self)
     local connection = self.mysql.MySqlConnection(self.settings)
     local status, error = pcall(connection.Open)

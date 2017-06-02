@@ -90,6 +90,23 @@ function MySQL.Sync.rollbackTransaction(transaction)
     return MySQL.Sync.wrapQuery(transaction.Rollback, transaction.Connection, 'COMMIT')
 end
 
+
+---
+-- Open connection
+--
+function MySQL.Sync.Open(callback)
+    local connection = MySQL.mysql.MySqlConnection(MySQL.settings)
+    local status, error = pcall(connection.Open)
+
+    if not status then
+        Logger:Fatal(error)
+
+        return nil
+    end
+
+    return connection
+end
+
 function MySQL.Sync.wrapQuery(call, Connection, Message, Transformer)
     Transformer = Transformer or function(Result) return Result end
     local asyncWrapper = MySQL.Async.wrapQuery(
