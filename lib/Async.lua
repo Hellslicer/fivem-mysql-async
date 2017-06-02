@@ -154,7 +154,7 @@ function MySQL.Async.Open(callback)
     local connection = MySQL.mysql.MySqlConnection(MySQL.settings)
     clr.Brouznouf.FiveM.Async.OpenCallback(connection.OpenAsync(), function (Result, Error)
         if Error ~= nil then
-            Logger:Error(Error.ToString())
+            Logger:Fatal(Error.InnerException.Message)
 
             return nil
         end
@@ -172,7 +172,7 @@ function MySQL.Async.wrapQuery(next, Connection, Message)
             Logger:Error(Error.ToString())
 
             if Connection then
-                Connection.Close()
+                Connection.Dispose()
             end
 
             return nil
@@ -183,7 +183,7 @@ function MySQL.Async.wrapQuery(next, Connection, Message)
         Result = next(Result)
 
         if Connection then
-            Connection.Close()
+            Connection.Dispose()
         end
 
         return Result
